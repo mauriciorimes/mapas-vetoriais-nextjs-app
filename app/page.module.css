@@ -1,0 +1,108 @@
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cabecalho h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: #38bdf8;
+}
+
+.cabecalho p {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+/* O mapa precisa de altura definida, senão o Leaflet desenha com 0px */
+.mapaWrapper {
+    height: 60vh;
+    min-height: 360px;
+}
+
+.cardPainel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.cardTitulo {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    color: #e2e8f0;
+}
+
+.resumo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.selo {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #94a3b8;
+}
+
+.tituloFeicao {
+    margin: 10px 0 12px;
+    font-size: 1.15rem;
+    color: #38bdf8;
+}
+
+.gridAtributos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.itemAtributo {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.itemRotulo {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.itemRotulo code {
+    text-transform: none;
+    color: #64748b;
+    font-size: 10px;
+}
+
+.itemValor {
+    margin-top: 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    overflow-wrap: anywhere;
+}
+
+.instrucaoVazio {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.rodape {
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    padding-bottom: 16px;
+}

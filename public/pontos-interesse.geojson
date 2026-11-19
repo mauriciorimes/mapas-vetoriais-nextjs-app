@@ -1,0 +1,44 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "NOME": "IF Sudeste MG — Campus Rio Pomba",
+                "TIPO": "Instituição de ensino",
+                "MUNICIPIO": "Rio Pomba (MG)",
+                "DESCRICAO": "Campus onde faço a pós-graduação em Web e Mobile"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-43.165, -21.2535]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "NOME": "Centro de Rio Pomba",
+                "TIPO": "Centro urbano",
+                "MUNICIPIO": "Rio Pomba (MG)",
+                "DESCRICAO": "Cidade da faculdade, às margens do Rio Pomba"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-43.17889, -21.275]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "NOME": "Centro de Itaocara",
+                "TIPO": "Centro urbano",
+                "MUNICIPIO": "Itaocara (RJ)",
+                "DESCRICAO": "Cidade onde moro, no Noroeste Fluminense"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-42.0815, -21.6765]
+            }
+        }
+    ]
+}
