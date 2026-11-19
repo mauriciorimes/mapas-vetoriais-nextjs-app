@@ -34,8 +34,10 @@ const REGIAO_RIO_POMBA_ITAOCARA: L.LatLngBoundsExpression = [
 
 type Dados = Record<string, FeatureCollection | null>;
 
+type Destaque = { layer: L.Path; estilo: L.PathOptions; estiloDestaque: L.PathOptions };
+
 /** Estilo do desenho que recebe o toque: a faixa larga (quase transparente) nas linhas, o próprio desenho nas demais. */
-function estiloInterativo(camada: Camada): L.PathOptions | undefined {
+function montarEstiloInterativo(camada: Camada): L.PathOptions | undefined {
     if (!camada.larguraToque) return camada.estilo;
     return {
         color: camada.estiloDestaque?.color ?? camada.estilo?.color,
@@ -44,6 +46,16 @@ function estiloInterativo(camada: Camada): L.PathOptions | undefined {
         lineCap: "round",
         lineJoin: "round",
     };
+}
+
+// Calculado uma única vez: se o <GeoJSON /> recebesse um objeto de estilo novo a cada renderização,
+// o react-leaflet reaplicaria o estilo em todas as feições e apagaria o destaque do desenho tocado.
+const ESTILO_INTERATIVO: Record<string, L.PathOptions | undefined> = Object.fromEntries(
+    CAMADAS.map((camada) => [camada.id, montarEstiloInterativo(camada)]),
+);
+
+function estiloInterativo(camada: Camada): L.PathOptions | undefined {
+    return ESTILO_INTERATIVO[camada.id];
 }
 
 function escaparHtml(texto: string): string {
@@ -107,8 +119,12 @@ export default function MapaVetorial({ onSelecionarFeicao }: Props) {
     const [tipoCamada, setTipoCamada] = useState<"satelite" | "ruas">("satelite");
     const [mapa, setMapa] = useState<L.Map | null>(null);
 
-    // No celular não existe "mouseout": guardamos o último desenho destacado para devolver o estilo dele.
-    const destacadaRef = useRef<{ layer: L.Path; estilo: L.PathOptions } | null>(null);
+    // Dois destaques diferentes:
+    // - hover: só no computador, enquanto o mouse está em cima (mouseover/mouseout);
+    // - seleção: o desenho tocado/clicado, que fica destacado enquanto o Popup dele estiver aberto
+    //   (no celular não existe "passar o mouse", então o destaque do toque não pode depender do hover).
+    const hoverRef = useRef<Destaque | null>(null);
+    const selecaoRef = useRef<Destaque | null>(null);
 
     // Baixa os três GeoJSON uma única vez, quando o mapa aparece na tela
     useEffect(() => {
@@ -132,21 +148,43 @@ export default function MapaVetorial({ onSelecionarFeicao }: Props) {
             .finally(() => setCarregando(false));
     }, []);
 
-    function removerDestaque() {
-        const anterior = destacadaRef.current;
-        if (anterior) {
-            anterior.layer.setStyle(anterior.estilo);
-            destacadaRef.current = null;
-        }
+    /** Devolve o estilo original, a menos que o desenho continue destacado pelo outro motivo. */
+    function restaurar(destaque: Destaque | null, manter: Destaque | null) {
+        if (destaque && destaque.layer !== manter?.layer) destaque.layer.setStyle(destaque.estilo);
     }
 
-    function destacar(layer: L.Layer, camada: Camada) {
+    /** Monta o destaque de um desenho (pontos não têm estilo de linha, então ficam de fora). */
+    function criarDestaque(layer: L.Layer, camada: Camada): Destaque | null {
         const estiloBase = estiloInterativo(camada);
-        if (!(layer instanceof L.Path) || !estiloBase || !camada.estiloDestaque) return;
-        if (destacadaRef.current?.layer === layer) return;
-        removerDestaque();
-        layer.setStyle(camada.estiloDestaque);
-        destacadaRef.current = { layer, estilo: estiloBase };
+        if (!(layer instanceof L.Path) || !estiloBase || !camada.estiloDestaque) return null;
+        return { layer, estilo: estiloBase, estiloDestaque: camada.estiloDestaque };
+    }
+
+    function aoPassarMouse(layer: L.Layer, camada: Camada) {
+        const destaque = criarDestaque(layer, camada);
+        if (!destaque || hoverRef.current?.layer === layer) return;
+        restaurar(hoverRef.current, selecaoRef.current);
+        destaque.layer.setStyle(destaque.estiloDestaque);
+        hoverRef.current = destaque;
+    }
+
+    function aoTirarMouse(layer: L.Layer) {
+        if (hoverRef.current?.layer !== layer) return;
+        restaurar(hoverRef.current, selecaoRef.current);
+        hoverRef.current = null;
+    }
+
+    function aoSelecionar(layer: L.Layer, camada: Camada) {
+        const destaque = criarDestaque(layer, camada);
+        if (selecaoRef.current?.layer !== layer) restaurar(selecaoRef.current, hoverRef.current);
+        selecaoRef.current = destaque;
+        destaque?.layer.setStyle(destaque.estiloDestaque);
+    }
+
+    function aoFecharPopup(layer: L.Layer) {
+        if (selecaoRef.current?.layer !== layer) return;
+        restaurar(selecaoRef.current, hoverRef.current);
+        selecaoRef.current = null;
     }
 
     // O Leaflet chama esta função uma vez para cada feição (município, rio ou ponto)
@@ -157,12 +195,11 @@ export default function MapaVetorial({ onSelecionarFeicao }: Props) {
             layer.bindPopup(montarPopup(camada, atributos));
 
             layer.on({
-                mouseover: () => destacar(layer, camada),
-                mouseout: () => {
-                    if (destacadaRef.current?.layer === layer) removerDestaque();
-                },
+                mouseover: () => aoPassarMouse(layer, camada),
+                mouseout: () => aoTirarMouse(layer),
+                popupclose: () => aoFecharPopup(layer),
                 click: () => {
-                    destacar(layer, camada);
+                    aoSelecionar(layer, camada);
                     onSelecionarFeicao({
                         camada: camada.nome,
                         geometria: feature.geometry.type,
