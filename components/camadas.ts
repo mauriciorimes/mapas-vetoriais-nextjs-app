@@ -13,6 +13,12 @@ export type Camada = {
     /** Estilo de linhas e polígonos (pontos usam o alfinete padrão do Leaflet). */
     estilo?: PathOptions;
     estiloDestaque?: PathOptions;
+    /**
+     * Só para linhas: largura (px) de uma faixa invisível desenhada por cima da linha.
+     * A linha tem poucos pixels e o dedo erra o toque, que cai no município de baixo;
+     * a faixa aumenta a área de toque sem engrossar o desenho.
+     */
+    larguraToque?: number;
 };
 
 export const CAMADAS: Camada[] = [
@@ -43,10 +49,12 @@ export const CAMADAS: Camada[] = [
             weight: 5,
             opacity: 0.9,
         },
+        // Aplicado à faixa de toque: ela aparece laranja translúcida quando o rio é tocado
         estiloDestaque: {
             color: "#f59e0b",
-            weight: 8,
+            opacity: 0.6,
         },
+        larguraToque: 30,
     },
     {
         id: "pontos",

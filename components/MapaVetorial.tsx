@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import type { Feature, FeatureCollection } from "geojson";
@@ -33,6 +33,18 @@ const REGIAO_RIO_POMBA_ITAOCARA: L.LatLngBoundsExpression = [
 ];
 
 type Dados = Record<string, FeatureCollection | null>;
+
+/** Estilo do desenho que recebe o toque: a faixa larga (quase transparente) nas linhas, o próprio desenho nas demais. */
+function estiloInterativo(camada: Camada): L.PathOptions | undefined {
+    if (!camada.larguraToque) return camada.estilo;
+    return {
+        color: camada.estiloDestaque?.color ?? camada.estilo?.color,
+        weight: camada.larguraToque,
+        opacity: 0.01,
+        lineCap: "round",
+        lineJoin: "round",
+    };
+}
 
 function escaparHtml(texto: string): string {
     return texto
@@ -129,11 +141,12 @@ export default function MapaVetorial({ onSelecionarFeicao }: Props) {
     }
 
     function destacar(layer: L.Layer, camada: Camada) {
-        if (!(layer instanceof L.Path) || !camada.estilo || !camada.estiloDestaque) return;
+        const estiloBase = estiloInterativo(camada);
+        if (!(layer instanceof L.Path) || !estiloBase || !camada.estiloDestaque) return;
         if (destacadaRef.current?.layer === layer) return;
         removerDestaque();
         layer.setStyle(camada.estiloDestaque);
-        destacadaRef.current = { layer, estilo: camada.estilo };
+        destacadaRef.current = { layer, estilo: estiloBase };
     }
 
     // O Leaflet chama esta função uma vez para cada feição (município, rio ou ponto)
@@ -216,6 +229,19 @@ export default function MapaVetorial({ onSelecionarFeicao }: Props) {
                 {CAMADAS.map((camada) => {
                     const geojson = dados[camada.id];
                     if (!geojson) return null;
+                    if (camada.larguraToque) {
+                        // Linha: desenho visível (sem eventos) + faixa de toque larga por cima
+                        return (
+                            <Fragment key={camada.id}>
+                                <GeoJSON data={geojson} style={camada.estilo} interactive={false} />
+                                <GeoJSON
+                                    data={geojson}
+                                    style={estiloInterativo(camada)}
+                                    onEachFeature={criarAoConfigurarFeicao(camada)}
+                                />
+                            </Fragment>
+                        );
+                    }
                     return (
                         <GeoJSON
                             key={camada.id}
